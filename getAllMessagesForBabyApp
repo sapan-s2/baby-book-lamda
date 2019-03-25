@@ -1,0 +1,132 @@
+
+'use strict';
+
+const AWS = require('aws-sdk');
+const dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+var docClient = new AWS.DynamoDB.DocumentClient();
+
+
+exports.handler = (event, context, callback) => {
+    var key= event.params.header['lastevaluated-key'];
+//   var  key = {"year":2019,"epoch":"1551897541"};
+var dataLimit = 20;
+    
+    //TODO trim spaces for lastEvaluatedKey
+    if(key == "begin"){
+      var params = {
+        TableName : "baby-app-partitiontest",
+        KeyConditionExpression: "#yr = :yyyy",
+        ExpressionAttributeNames:{
+            "#yr": "year"
+        },
+        ExpressionAttributeValues: {
+            ":yyyy": 2019
+        },
+    
+         ScanIndexForward: false,
+         Limit: dataLimit
+};}
+else{
+
+    var lastevalJsonKey = JSON.parse(key);
+    var params = {
+        TableName : "baby-app-partitiontest",
+        KeyConditionExpression: "#yr = :yyyy",
+        ExpressionAttributeNames:{
+            "#yr": "year"
+        },
+        ExpressionAttributeValues: {
+            ":yyyy": 2019
+        },
+    
+         ScanIndexForward: false,
+    //   ExclusiveStartKey: {"year":2018,"epoch":"1546217719"},
+      ExclusiveStartKey: lastevalJsonKey,
+         Limit: dataLimit
+}
+    
+}
+
+// var  lastEvaluatedKey= event.params.header['LastEvaluatedKey'];
+// console.log('event headers' + lastEvaluatedKey)
+
+docClient.query(params, function(err, data) {
+    if (err) {
+        console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+         callback(null, {
+                statusCode: '500',
+                body: err.stack
+            });
+    } else {
+        console.log("Query succeeded.");
+        data.Items.forEach(function(item) {
+            console.log(" -", item.year + ": " + item.epoch + ": " + item.message);
+           
+        });
+         callback(null, {
+                statusCode: '200',
+                 data
+            });
+    }
+
+    return data;
+});
+
+}
+    
+//  var params = {
+//     TableName: "baby-app-partitiontest",
+//     //  IndexName: "time-message_id-index",
+//     //  KeyConditionExpression: 'message_id = :message_id',
+//     //  ExpressionAttributeValues: {
+//     //     ':message_id': "9e491a70-08b3-11e9-ab93-2d1aa5b5a647"
+//     // },// ExclusiveStartKey: {
+//     //   "message_id": "dfacc350-0745-11e9-9a36-f140817e6879",
+//     //   "time": "Mon Dec 24 2018 06:33:49 GMT+0000 (UTC)"
+//     // },
+//     //  Limit : 4,
+//      Key:{
+//     //   "primary_key1": "message_id",
+//         sort_key1: "epoch"
+//     },
+//      ScanIndexForward: false
+
+// };
+
+// docClient.scan(params, onScan);
+// var count = 0 ;
+// function onScan(err, data) {
+//     if (err) {
+//         console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+//     } else {        
+//         console.log("Scan succeeded.");
+//         callback(null, {
+//                 // statusCode: '200',
+//                 data
+//             });
+//         console.log("data limit" + data.limit)    ;
+    
+//         data.Items.forEach(function(itemdata) {
+//           console.log("Item :", ++count,JSON.stringify(itemdata));
+//         });
+
+//         // continue scanning if we have more items
+//         if (typeof data.LastEvaluatedKey != "undefined") {
+//             console.log("Scanning for more...");
+//             params.ExclusiveStartKey = data.LastEvaluatedKey;
+//             docClient.scan(params, onScan);
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+    
+
+     
+
